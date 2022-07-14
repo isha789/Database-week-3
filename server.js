@@ -118,9 +118,21 @@ app.post("/products", function(req, res){
     .status(400)
     .send("the unit price must be an integer")
     }
-pool.query("select * from products")
+pool.query('select * from suppliers where id=$1 ' , [newProductSupplierId])
+.then((result) => {
+    if (result.rows.length === 0){
+        res.status(400)
+        .send("a product supplier with that id is not in the database");
+} else {
+    const query = 'insert into products (product_name, unit_price, supplier_id) VALUES ($1, $2, $3) returning id as productId '
 
-})
+    pool.query(query, [newProductName, newProductUnitprice, newProductSupplierId])
+    .then((result) => res.json(result.rows[0]))
+    .catch((e) => console.error(e));
+}
+});
+
+});
 
 
 
@@ -173,13 +185,33 @@ app.get("/customers/:customerId/orders", (req, res) => {
 
 app.put('/customers/:customerId', (req, res) => {
     const customerId = req.params.customerId;
-    const newEmail = req.body.email;
+    const newName = req.body.name;
+    const newAddress = req.body.address;
+    const  newCountry= req.body.country;
     const newCity = req.body.city;
 
-    const updateCustomer = "UPDATE customers set email = $1, city = $2 where id = $3";
+    const updateCustomer = "UPDATE customers set  name= $1,  address=$2, country = $3, city=$4 where id = $5 ";
 
-    pool.query(updateCustomer, [newEmail, newCity, customerId])
+    pool.query(updateCustomer, [newName , newAddress , newCountry , newCity, customerId])
         .then(() => res.send("Customer updated!"))
+        .catch(error => res.error(error.message));
+
+})
+//Add a new DELETE endpoint /orders/:orderId to delete an existing order along all the associated order items.
+
+app.delete("/orders/:orderId", (req, res) => {
+    const orderId= req.params.orderId;
+
+    const deleteOrderItems = "DELETE from order_items where order_id = $1";
+    const deleteOrders = "DELETE from orders where id = $1";
+
+    pool.query(deleteOrderItems, [orderId])
+       
+        .then(() => {
+            pool.query(deleteOrders, [orderId])
+                .then(() => res.send(" orders and order_items have been deleted"))
+                .catch(error => res.error(error.message));
+        })
         .catch(error => res.error(error.message));
 
 })
