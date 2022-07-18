@@ -215,8 +215,30 @@ app.delete("/orders/:orderId", (req, res) => {
         .catch(error => res.error(error.message));
 
 })
+//Add a new DELETE endpoint /customers/:customerId to delete an existing customer only if this customer doesn't have orders.
 
 
+app.delete("/customer/:customerId", (req, res) => {
+    const customerId = req.params.customerId;
+    const deleteCustomer = "DELETE from customers where id = $1";
+    const customerOrders = "SELECT * FROM orders where id = $1";
+    if (!customerOrders) {
+        pool.query(deleteCustomer, [customerId])
+            .then(() => res.send("Customer deleted"))
+            .catch(error => res.error(error.message))
+    }
+});
+// app.delete("/customers/:customerId", function (req, res) {
+//     const customerId = req.params.customerId;
+  
+//     pool
+//       .query("DELETE FROM customers WHERE order.length=0", [customerId])
+      
+//           .then(() => res.send(`Customer ${customerId} deleted!`))
+//           .catch((e) => console.error(e));
+//       })
+     
+ 
 
 app.listen(PORT, function () {
     console.log(`Your app is listening on port ${PORT}`);
